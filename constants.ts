@@ -1,3 +1,4 @@
+
 import { Translations } from './types';
 
 export const TRANSLATIONS: Record<'en' | 'my', Translations> = {
@@ -24,9 +25,23 @@ export const TRANSLATIONS: Record<'en' | 'my', Translations> = {
     selectKey: "Select Google API Key",
     
     settingsTitle: "Settings",
+    editApiTitle: "Edit API Key",
+    getKey: "Get Key?",
     apiKeyLabel: "Gemini API Key",
-    apiKeyPlaceholder: "Enter your API Key (starts with AIza...)",
-    save: "Save Key",
+    apiKeyPlaceholder: "Enter your API Key...",
+    apiKeyHelper: "Your API Key is stored locally on your device.",
+    
+    networkTitle: "Network Settings",
+    proxyServerLabel: "Singapore Proxy Server",
+    proxyServerDesc: "Low latency gateway for Myanmar",
+    proxyUrlLabel: "Proxy URL",
+    proxyHelper: "Use the Singapore proxy to access the service from Myanmar without a VPN.",
+    
+    statusTitle: "Connection Status",
+    statusConnected: "Using Proxy (SG)",
+    statusStandard: "Standard Direct Connection",
+    
+    save: "Save Settings",
     cancel: "Cancel",
     orEnterKey: "Or enter key manually",
   },
@@ -53,9 +68,23 @@ export const TRANSLATIONS: Record<'en' | 'my', Translations> = {
     selectKey: "Google API Key ရွေးချယ်ပါ",
     
     settingsTitle: "ဆက်တင်များ",
-    apiKeyLabel: "Gemini API Key",
-    apiKeyPlaceholder: "API Key ထည့်ပါ (AIza ဖြင့်စသော...)",
-    save: "သိမ်းဆည်းမည်",
+    editApiTitle: "API ကိုး ပြင်ဆင်ရန်",
+    getKey: "Get Key?",
+    apiKeyLabel: "Gemini API ကိုး",
+    apiKeyPlaceholder: "................................",
+    apiKeyHelper: "သင့်၏ API ကိုးကို သင့်ဖုန်းထဲတွင်သာ သိမ်းဆည်းထားပါသည်။",
+    
+    networkTitle: "ကွန်ရက် ဆက်တင်များ",
+    proxyServerLabel: "စင်ကာပူ ပရောက်စီ ဆာဗာ",
+    proxyServerDesc: "Low latency gateway for Myanmar",
+    proxyUrlLabel: "ပရောက်စီ URL",
+    proxyHelper: "မြန်မာနိုင်ငံမှ အသုံးပြုသူများအတွက် VPN မလိုဘဲ အသုံးပြုနိုင်ရန် စင်ကာပူ ပရောက်စီကို အသုံးပြုပါ။",
+    
+    statusTitle: "ချိတ်ဆက်မှု အခြေအနေ",
+    statusConnected: "ပရောက်စီ အသုံးပြုနေသည် (SG)",
+    statusStandard: "သာမန် ချိတ်ဆက်မှု (Direct)",
+    
+    save: "ဆက်တင်များ သိမ်းမည်",
     cancel: "မလုပ်တော့ပါ",
     orEnterKey: "သို့မဟုတ် API Key ကိုယ်တိုင်ထည့်မည်",
   }

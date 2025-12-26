@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CampaignState, Language } from './types';
 import { TRANSLATIONS } from './constants';
@@ -5,7 +6,6 @@ import { suggestPoses, generateCampaignImage } from './services/geminiService';
 import { Step1Import } from './components/Step1Import';
 import { Step2Plan } from './components/Step2Plan';
 import { Step3Gallery } from './components/Step3Gallery';
-import { ApiKeyChecker } from './components/ApiKeyChecker';
 import { SettingsModal } from './components/SettingsModal';
 
 const initialState: CampaignState = {
@@ -19,6 +19,8 @@ const initialState: CampaignState = {
   isAnalyzing: false,
 };
 
+const DEFAULT_PROXY = 'https://sg-gateway.burmese-studio.ai/v1beta';
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -27,7 +29,10 @@ const App: React.FC = () => {
   // Settings / Key Management
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [isKeyReady, setIsKeyReady] = useState(false);
+  
+  // Proxy Settings
+  const [useProxy, setUseProxy] = useState(false);
+  const [proxyUrl, setProxyUrl] = useState(DEFAULT_PROXY);
 
   // Initialize theme
   useEffect(() => {
@@ -44,12 +49,16 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Initialize API Key from LocalStorage
+  // Initialize Settings from LocalStorage
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-      setApiKey(storedKey);
-    }
+    if (storedKey) setApiKey(storedKey);
+
+    const storedUseProxy = localStorage.getItem('use_proxy');
+    if (storedUseProxy) setUseProxy(storedUseProxy === 'true');
+
+    const storedProxyUrl = localStorage.getItem('proxy_url');
+    if (storedProxyUrl) setProxyUrl(storedProxyUrl);
   }, []);
 
   const updateState = (updates: Partial<CampaignState>) => {
@@ -59,9 +68,16 @@ const App: React.FC = () => {
   const toggleLang = () => setLang(prev => prev === 'en' ? 'my' : 'en');
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  const handleSaveSettings = (key: string) => {
+  const handleSaveSettings = (key: string, newUseProxy: boolean, newProxyUrl: string) => {
     setApiKey(key);
     localStorage.setItem('gemini_api_key', key);
+    
+    setUseProxy(newUseProxy);
+    localStorage.setItem('use_proxy', String(newUseProxy));
+
+    setProxyUrl(newProxyUrl);
+    localStorage.setItem('proxy_url', newProxyUrl);
+
     setShowSettings(false);
   };
 
@@ -73,7 +89,11 @@ const App: React.FC = () => {
     updateState({ isAnalyzing: true });
     
     try {
-      const suggestedPoses = await suggestPoses(apiKey, state.masterPrompt);
+      const suggestedPoses = await suggestPoses(
+        apiKey, 
+        state.masterPrompt, 
+        useProxy ? proxyUrl : undefined
+      );
       updateState({ 
         poses: suggestedPoses,
         step: 2,
@@ -82,7 +102,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.error(e);
       // If error is due to missing key, maybe show settings?
-      if (!apiKey) setShowSettings(true);
+      if (!apiKey && !window.aistudio) setShowSettings(true);
       updateState({ isAnalyzing: false });
     }
   };
@@ -104,7 +124,8 @@ const App: React.FC = () => {
             state.heroImageBase64!,
             state.sellingItemBase64!,
             state.masterPrompt,
-            pose
+            pose,
+            useProxy ? proxyUrl : undefined
         );
         return result;
       } catch (err) {
@@ -126,10 +147,6 @@ const App: React.FC = () => {
     setState(initialState);
   };
 
-  // Determine if we should block UI for key
-  // We block if we have NO apiKey AND isKeyReady is false (meaning no external window.aistudio key selected either)
-  const shouldShowBlocker = !apiKey && !isKeyReady;
-
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8 transition-colors duration-200">
       
@@ -139,17 +156,10 @@ const App: React.FC = () => {
         onClose={() => setShowSettings(false)} 
         onSave={handleSaveSettings}
         currentKey={apiKey}
+        currentUseProxy={useProxy}
+        currentProxyUrl={proxyUrl}
         lang={lang}
       />
-
-      {/* Key Checker (Blocker) */}
-      {shouldShowBlocker && (
-        <ApiKeyChecker 
-          lang={lang} 
-          onReady={() => setIsKeyReady(true)} 
-          onOpenSettings={() => setShowSettings(true)}
-        />
-      )}
 
       {/* Header */}
       <header className="w-full max-w-2xl flex items-center justify-between mb-8 z-20">
@@ -191,14 +201,15 @@ const App: React.FC = () => {
 
           <button
             onClick={() => setShowSettings(true)}
-            className={`p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors 
-              ${apiKey ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors 
+              ${apiKey || (typeof window !== 'undefined' && window.aistudio) ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500'}`}
             title="Settings"
           >
              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
              </svg>
+             <span className="text-xs font-medium">Settings</span>
           </button>
         </div>
       </header>

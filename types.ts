@@ -1,12 +1,13 @@
+
 export type Language = 'en' | 'my';
 
 export interface CampaignState {
   step: 1 | 2 | 3;
   masterPrompt: string;
   heroImageBase64: string | null;
-  sellingItemBase64: string | null; // New field for product reference
+  sellingItemBase64: string | null;
   poses: string[];
-  generatedImages: string[]; // Array of Base64 strings
+  generatedImages: string[];
   isGenerating: boolean;
   isAnalyzing: boolean;
 }
@@ -18,7 +19,7 @@ export interface Translations {
   promptLabel: string;
   promptPlaceholder: string;
   imageLabel: string;
-  sellingItemLabel: string; // New label
+  sellingItemLabel: string;
   btnPlan: string;
   
   step2Title: string;
@@ -35,8 +36,22 @@ export interface Translations {
   
   // Settings
   settingsTitle: string;
+  editApiTitle: string;
+  getKey: string;
   apiKeyLabel: string;
   apiKeyPlaceholder: string;
+  apiKeyHelper: string;
+  
+  networkTitle: string;
+  proxyServerLabel: string;
+  proxyServerDesc: string;
+  proxyUrlLabel: string;
+  proxyHelper: string;
+  
+  statusTitle: string;
+  statusConnected: string;
+  statusStandard: string;
+  
   save: string;
   cancel: string;
   orEnterKey: string;

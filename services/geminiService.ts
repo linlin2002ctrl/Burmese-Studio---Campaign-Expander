@@ -1,13 +1,25 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Helper to ensure we have a key (environment, local storage, or injected via window.aistudio)
-const getClient = (apiKey?: string) => {
+const getClient = (apiKey?: string, baseUrl?: string) => {
   // Prioritize the explicitly passed key (BYOK), then fallback to process.env
   const key = apiKey || process.env.API_KEY;
   if (!key) {
     throw new Error("API Key not found. Please enter an API key in Settings.");
   }
-  return new GoogleGenAI({ apiKey: key });
+  
+  // Initialize config with API key
+  const config: any = { apiKey: key };
+  
+  // If a custom proxy URL is provided, try to set it as baseUrl.
+  // Note: Support for this depends on the exact version of @google/genai.
+  // We assume the constructor accepts it in the options object.
+  if (baseUrl) {
+    config.baseUrl = baseUrl;
+  }
+  
+  return new GoogleGenAI(config);
 };
 
 // Retry helper for Rate Limits (429)
@@ -37,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, baseDelay = 2000)
   }
 }
 
-export const suggestPoses = async (apiKey: string | undefined, masterPrompt: string): Promise<string[]> => {
-  const ai = getClient(apiKey);
+export const suggestPoses = async (apiKey: string | undefined, masterPrompt: string, baseUrl?: string): Promise<string[]> => {
+  const ai = getClient(apiKey, baseUrl);
     
   const prompt = `
     Act as a high-end fashion photoshoot director.
@@ -114,9 +126,10 @@ export const generateCampaignImage = async (
   heroImageBase64: string,
   sellingItemBase64: string,
   masterPrompt: string,
-  poseDescription: string
+  poseDescription: string,
+  baseUrl?: string
 ): Promise<string | null> => {
-  const ai = getClient(apiKey);
+  const ai = getClient(apiKey, baseUrl);
 
   // 1. Prepare Images
   const heroImg = parseBase64(heroImageBase64);

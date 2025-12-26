@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Burmese Studio - Campaign Expander</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Burmese Studio</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,41 +12,96 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'Noto Sans Myanmar', 'sans-serif'],
+              sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Pyidaungsu', 'Noto Sans Myanmar', 'sans-serif'],
             },
             colors: {
-              brand: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                900: '#0c4a6e',
+              accent: {
+                DEFAULT: '#007AFF', // System Blue
+                hover: '#0062CC',
+                glow: 'rgba(0, 122, 255, 0.4)',
+              },
+              mono: {
+                50: '#FFFFFF', // Primary Text (Headers)
+                100: '#F5F5F7',
+                200: '#E5E5E7', // Body Text (Off-white)
+                300: '#D1D1D6', // Placeholders
+                400: '#8E8E93',
+                700: '#2C2C2E', // Secondary Surface
+                800: '#1C1C1E', // Primary Surface (Apple System Gray 6 Dark)
+                900: '#121212', // Background (Not Pure Black)
+                950: '#000000', 
+              }
+            },
+            boxShadow: {
+              'soft': '0 8px 32px rgba(0, 0, 0, 0.06)',
+              'float': '0 20px 40px rgba(0, 0, 0, 0.12)',
+              'glow': '0 0 20px rgba(0, 122, 255, 0.15)', // Refined for Zen/Minimalist feel
+              'inner-light': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'slide-up': 'slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'pulse-slow': 'pulse 3s infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(15px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
               }
             }
           }
         }
       }
     </script>
-    <!-- JSZip via CDN (Keeping global declaration) -->
+    <!-- JSZip via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;500;600&family=Inter:wght@400;500;600&family=Pyidaungsu:wght@400;600&display=swap" rel="stylesheet">
     <style>
       body {
-        font-family: 'Inter', 'Noto Sans Myanmar', sans-serif;
+        font-family: 'Inter', 'Pyidaungsu', 'Noto Sans Myanmar', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior-y: none;
       }
-      /* Custom scrollbar for cleanliness */
+      
+      /* Nolan DNA: Burmese Readability Optimization */
+      /* Light mode uses weight 500/600, Dark mode reduces to 400 to prevent 'blooming' */
+      .dark body[lang="my"], .dark :lang(my) {
+        font-weight: 400 !important;
+        letter-spacing: 0.01em;
+      }
+
+      /* Hide scrollbar for immersive feel */
       ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
+        width: 0px;
         background: transparent;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
+      
+      /* Glassmorphism Utilities */
+      .glass-surface {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
       }
-      .dark ::-webkit-scrollbar-thumb {
-        background: #475569;
+      .dark .glass-surface {
+        background: rgba(28, 28, 30, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+      }
+      .dark .glass-nav {
+        background: rgba(28, 28, 30, 0.85);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
     </style>
   <script type="importmap">
@@ -62,7 +117,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-200">
+  <body class="bg-[#F2F2F7] text-mono-900 dark:bg-[#121212] dark:text-mono-200 transition-colors duration-500 selection:bg-accent selection:text-white">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

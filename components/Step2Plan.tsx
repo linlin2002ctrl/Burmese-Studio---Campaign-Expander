@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TRANSLATIONS } from '../constants';
 import { CampaignState, Language } from '../types';
@@ -10,7 +11,7 @@ interface Props {
   onBack: () => void;
 }
 
-export const Step2Plan: React.FC<Props> = ({ state, updateState, lang, onNext, onBack }) => {
+export const Step2Plan: React.FC<Props> = ({ state, updateState, lang, onNext }) => {
   const t = TRANSLATIONS[lang];
 
   const handlePoseChange = (index: number, value: string) => {
@@ -19,53 +20,58 @@ export const Step2Plan: React.FC<Props> = ({ state, updateState, lang, onNext, o
     updateState({ poses: newPoses });
   };
 
+  if (state.poses.length === 0) {
+      return (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-6 animate-fade-in">
+              <div className="w-24 h-24 rounded-full bg-mono-100 dark:bg-mono-800 flex items-center justify-center shadow-inner">
+                 <svg className="w-12 h-12 text-mono-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold dark:text-white">Studio is empty</h3>
+                <p className="text-mono-400 max-w-sm mx-auto">Upload your hero assets in the Studio tab to begin.</p>
+              </div>
+          </div>
+      )
+  }
+
   return (
-    <div className="animate-fade-in space-y-6 pb-24">
-      <div className="flex items-center gap-4">
-        <button 
-          onClick={onBack}
-          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          <svg className="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
-          <h2 className="text-2xl font-bold dark:text-white">{t.step2Title}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{t.step2Desc}</p>
+    <div className="animate-fade-in space-y-8 pt-2 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+            <h2 className="text-3xl md:text-5xl font-bold dark:text-white tracking-tight">{t.step2Title}</h2>
+            <p className="text-mono-400 dark:text-mono-300 text-lg font-medium">{t.step2Desc}</p>
         </div>
+        <button
+            onClick={onNext}
+            className="w-full md:w-auto px-8 py-4 bg-accent hover:bg-accent-hover text-white rounded-2xl text-lg font-bold shadow-glow transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+            {t.btnGenerate}
+        </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {state.poses.map((pose, idx) => (
           <div 
             key={idx}
-            className="group relative bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent"
+            className="group relative bg-white dark:bg-mono-800 rounded-[2rem] p-6 shadow-soft transition-all hover:scale-[1.01] hover:shadow-lg border border-transparent dark:border-mono-700/50 flex flex-col"
           >
-            <div className="absolute top-4 left-4 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">
-              {idx + 1}
+            <div className="flex items-center justify-between mb-4">
+                 <div className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center text-sm font-bold font-mono">
+                    0{idx + 1}
+                 </div>
+                 <div className="h-2 w-2 rounded-full bg-mono-200 dark:bg-mono-700 group-hover:bg-accent/50 transition-colors"></div>
             </div>
+            
             <textarea
               value={pose}
               onChange={(e) => handlePoseChange(idx, e.target.value)}
-              className="w-full pl-10 bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-200 resize-none h-20 text-sm leading-relaxed"
+              className="w-full bg-transparent border-none focus:ring-0 text-mono-800 dark:text-mono-200 resize-none flex-1 text-base leading-relaxed placeholder:text-mono-300 min-h-[120px]"
             />
           </div>
         ))}
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-10 flex justify-center">
-        <div className="w-full max-w-2xl">
-           <button
-            onClick={onNext}
-            className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-lg font-bold shadow-lg shadow-brand-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-            </svg>
-            {t.btnGenerate}
-          </button>
-        </div>
       </div>
     </div>
   );

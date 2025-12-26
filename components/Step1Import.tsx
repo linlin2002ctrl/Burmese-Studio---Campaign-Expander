@@ -1,3 +1,4 @@
+
 import React, { ChangeEvent } from 'react';
 import { TRANSLATIONS } from '../constants';
 import { CampaignState, Language } from '../types';
@@ -12,24 +13,11 @@ interface Props {
 export const Step1Import: React.FC<Props> = ({ state, updateState, lang, onNext }) => {
   const t = TRANSLATIONS[lang];
 
-  const handleHeroUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: ChangeEvent<HTMLInputElement>, key: 'heroImageBase64' | 'sellingItemBase64') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        updateState({ heroImageBase64: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSellingItemUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateState({ sellingItemBase64: reader.result as string });
-      };
+      reader.onloadend = () => updateState({ [key]: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
@@ -37,147 +25,100 @@ export const Step1Import: React.FC<Props> = ({ state, updateState, lang, onNext 
   const isReady = state.masterPrompt.length > 5 && !!state.heroImageBase64 && !!state.sellingItemBase64;
 
   return (
-    <div className="animate-fade-in space-y-8 pb-24">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold dark:text-white">{t.step1Title}</h2>
-        <p className="text-slate-500 dark:text-slate-400">{t.step1Desc}</p>
+    <div className="animate-fade-in space-y-8">
+      
+      <div className="space-y-2 max-w-4xl">
+        <h2 className="text-3xl md:text-5xl font-bold text-mono-900 dark:text-white tracking-tight">{t.step1Title}</h2>
+        <p className="text-mono-400 dark:text-mono-300 font-medium text-lg leading-relaxed max-w-2xl">{t.step1Desc}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-8">
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pt-4">
         
-        {/* Slot 1: Master Prompt */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            1. {t.promptLabel}
-          </label>
-          <textarea
-            value={state.masterPrompt}
-            onChange={(e) => updateState({ masterPrompt: e.target.value })}
-            placeholder={t.promptPlaceholder}
-            className="w-full p-4 h-28 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all resize-none dark:text-white text-sm"
-          />
-        </div>
-
-        {/* Grid for Images */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Slot 2: Hero Shot */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              2. {t.imageLabel}
-            </label>
-            <div className="relative group h-48">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleHeroUpload}
-                className="hidden"
-                id="hero-upload"
-              />
-              <label
-                htmlFor="hero-upload"
-                className={`flex flex-col items-center justify-center w-full h-full border-2 border-dashed rounded-xl cursor-pointer transition-all overflow-hidden
-                  ${state.heroImageBase64 
-                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' 
-                    : 'border-slate-300 dark:border-slate-600 hover:border-brand-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-              >
-                {state.heroImageBase64 ? (
-                  <div className="relative w-full h-full">
-                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={state.heroImageBase64} 
-                      alt="Hero" 
-                      className="w-full h-full object-contain"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">Change Reference</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center p-4">
-                    <svg className="mx-auto h-8 w-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <p className="text-xs text-slate-500">Upload Character/Pose Ref</p>
-                  </div>
-                )}
-              </label>
+        {/* Left Column: Creative Core (Prompt) */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="group relative bg-white dark:bg-mono-800 rounded-[2rem] p-2 shadow-soft transition-all hover:shadow-lg h-full min-h-[300px] flex flex-col">
+            <textarea
+              value={state.masterPrompt}
+              onChange={(e) => updateState({ masterPrompt: e.target.value })}
+              placeholder={t.promptPlaceholder}
+              className="w-full flex-1 bg-transparent rounded-3xl p-6 text-xl md:text-2xl text-mono-900 dark:text-white placeholder:text-mono-300 resize-none focus:outline-none leading-relaxed"
+            />
+            <div className="flex justify-end p-4">
+               <span className="text-[10px] font-bold text-mono-300 uppercase tracking-widest bg-mono-100 dark:bg-mono-700 px-3 py-1 rounded-full">DNA Prompt</span>
             </div>
           </div>
-
-          {/* Slot 3: Selling Item */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              3. {t.sellingItemLabel}
-            </label>
-            <div className="relative group h-48">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleSellingItemUpload}
-                className="hidden"
-                id="item-upload"
-              />
-              <label
-                htmlFor="item-upload"
-                className={`flex flex-col items-center justify-center w-full h-full border-2 border-dashed rounded-xl cursor-pointer transition-all overflow-hidden
-                  ${state.sellingItemBase64 
-                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' 
-                    : 'border-slate-300 dark:border-slate-600 hover:border-brand-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-              >
-                {state.sellingItemBase64 ? (
-                  <div className="relative w-full h-full">
-                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={state.sellingItemBase64} 
-                      alt="Product" 
-                      className="w-full h-full object-contain"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">Change Product</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center p-4">
-                    <svg className="mx-auto h-8 w-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    <p className="text-xs text-slate-500">Upload Garment/Product</p>
-                  </div>
-                )}
-              </label>
-            </div>
-          </div>
-
         </div>
+
+        {/* Right Column: Context (Assets) */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-4 h-full">
+               {/* Hero Image */}
+               <div className="relative aspect-[3/4] lg:aspect-auto lg:h-full">
+                  <input type="file" accept="image/*" onChange={(e) => handleUpload(e, 'heroImageBase64')} className="hidden" id="hero-upload" />
+                  <label 
+                    htmlFor="hero-upload"
+                    className="block w-full h-full cursor-pointer overflow-hidden rounded-3xl shadow-soft transition-all active:scale-95 bg-white dark:bg-mono-800 hover:bg-mono-50 dark:hover:bg-mono-700 group border-2 border-transparent hover:border-accent/20"
+                  >
+                     {state.heroImageBase64 ? (
+                       /* eslint-disable-next-line @next/next/no-img-element */
+                       <img src={state.heroImageBase64} alt="Hero" className="w-full h-full object-cover" />
+                     ) : (
+                       <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-mono-300 group-hover:text-accent transition-colors">
+                         <div className="w-14 h-14 rounded-full bg-mono-100 dark:bg-mono-700 flex items-center justify-center">
+                            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                         </div>
+                         <span className="text-xs font-bold uppercase tracking-wide">{t.imageLabel}</span>
+                       </div>
+                     )}
+                  </label>
+               </div>
+
+               {/* Product Image */}
+               <div className="relative aspect-[3/4] lg:aspect-auto lg:h-full">
+                  <input type="file" accept="image/*" onChange={(e) => handleUpload(e, 'sellingItemBase64')} className="hidden" id="item-upload" />
+                  <label 
+                    htmlFor="item-upload"
+                    className="block w-full h-full cursor-pointer overflow-hidden rounded-3xl shadow-soft transition-all active:scale-95 bg-white dark:bg-mono-800 hover:bg-mono-50 dark:hover:bg-mono-700 group border-2 border-transparent hover:border-accent/20"
+                  >
+                     {state.sellingItemBase64 ? (
+                       /* eslint-disable-next-line @next/next/no-img-element */
+                       <img src={state.sellingItemBase64} alt="Product" className="w-full h-full object-cover" />
+                     ) : (
+                       <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-mono-300 group-hover:text-accent transition-colors">
+                          <div className="w-14 h-14 rounded-full bg-mono-100 dark:bg-mono-700 flex items-center justify-center">
+                            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                          </div>
+                         <span className="text-xs font-bold uppercase tracking-wide">{t.sellingItemLabel}</span>
+                       </div>
+                     )}
+                  </label>
+               </div>
+            </div>
+        </div>
+
       </div>
 
-      <div className="pt-4 sticky bottom-6 z-10">
+      {/* Action Bar */}
+      <div className="pt-4 flex justify-end">
         <button
           onClick={onNext}
           disabled={!isReady || state.isAnalyzing}
-          className={`w-full py-4 rounded-xl text-lg font-bold shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2
+          className={`w-full lg:w-auto px-12 py-5 rounded-2xl font-bold text-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-3
             ${isReady && !state.isAnalyzing
-              ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-brand-500/30' 
-              : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+              ? 'bg-mono-900 dark:bg-white text-white dark:text-black shadow-float hover:shadow-glow hover:-translate-y-1' 
+              : 'bg-mono-200 dark:bg-mono-800 text-mono-400 cursor-not-allowed'
             }`}
         >
           {state.isAnalyzing ? (
             <>
-              <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Analyzing Inputs...</span>
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>Analyzing DNA...</span>
             </>
           ) : (
             <>
-              <span>{t.btnPlan}</span>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+                <span>{t.btnPlan}</span>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </>
           )}
         </button>

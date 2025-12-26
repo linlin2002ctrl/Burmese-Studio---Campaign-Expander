@@ -1,6 +1,36 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+// Helper to parse specific Gemini errors into user-friendly messages
+const formatGeminiError = (error: any): string => {
+  const msg = error?.message || '';
+  const status = error?.status || error?.response?.status;
+  
+  if (msg.includes('API Key not found')) return msg;
+
+  if (status === 400 || msg.includes('400') || msg.includes('InvalidArgument')) {
+    return "Invalid request. Please check your prompt or images.";
+  }
+  if (status === 401 || msg.includes('401') || msg.includes('API key not valid')) {
+    return "Invalid API Key. Please check your key in Settings.";
+  }
+  if (status === 403 || msg.includes('403') || msg.includes('permission denied')) {
+    return "Access denied. Your API Key does not have permission for this model or region.";
+  }
+  if (status === 404 || msg.includes('404') || msg.includes('not found')) {
+    return "Model not found. The selected model might be unavailable in your region.";
+  }
+  if (status === 429 || msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Resource has been exhausted')) {
+    return "Quota exceeded. Please try again later or use a different API key.";
+  }
+  if (status === 503 || msg.includes('503') || msg.includes('Overloaded')) {
+    return "AI Service is overloaded. Please try again in a moment.";
+  }
+  
+  // Return the raw message if it's short, otherwise generic
+  return msg.length < 100 ? msg : "An unexpected error occurred. Please check your connection.";
+};
+
 // Helper to ensure we have a key (environment, local storage, or injected via window.aistudio)
 const getClient = (apiKey?: string, baseUrl?: string) => {
   // Prioritize the explicitly passed key (BYOK), then fallback to process.env
@@ -13,8 +43,6 @@ const getClient = (apiKey?: string, baseUrl?: string) => {
   const config: any = { apiKey: key };
   
   // If a custom proxy URL is provided, try to set it as baseUrl.
-  // Note: Support for this depends on the exact version of @google/genai.
-  // We assume the constructor accepts it in the options object.
   if (baseUrl) {
     config.baseUrl = baseUrl;
   }
@@ -25,7 +53,7 @@ const getClient = (apiKey?: string, baseUrl?: string) => {
 // Retry helper for Rate Limits (429)
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 5, baseDelay = 2000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
@@ -38,9 +66,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, baseDelay = 2000)
       msg.includes('429') || 
       msg.includes('Resource has been exhausted') ||
       msg.includes('Quota exceeded');
+      
+    // Check for server overload (503)
+    const isOverloaded = status === 503 || msg.includes('Overloaded');
 
-    if (retries > 0 && isRateLimit) {
-      console.warn(`Rate limit hit. Retrying in ${baseDelay}ms... (${retries} attempts left)`);
+    if (retries > 0 && (isRateLimit || isOverloaded)) {
+      console.warn(`Rate limit/Overload hit. Retrying in ${baseDelay}ms... (${retries} attempts left)`);
       await wait(baseDelay);
       return withRetry(fn, retries - 1, baseDelay * 2); // Exponential backoff
     }
@@ -50,33 +81,32 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, baseDelay = 2000)
 }
 
 export const suggestPoses = async (apiKey: string | undefined, masterPrompt: string, baseUrl?: string): Promise<string[]> => {
-  const ai = getClient(apiKey, baseUrl);
-    
-  const prompt = `
-    Act as a high-end fashion photoshoot director.
-    First, analyze the provided "Master Prompt" to extract the SUBJECT, OUTFIT, SETTING, and STYLE.
-    
-    Master Prompt: "${masterPrompt}"
-    
-    Task: Generate 6 distinct, commercially viable pose descriptions tailored specifically to the extracted 'STYLE' and 'OUTFIT'.
-    
-    The 6 poses must cover these exact shot types in order:
-    1. Full Body Look (Showcasing the complete silhouette and outfit)
-    2. Close-up (Focusing on fabric details, accessories, or makeup)
-    3. Action / Dynamic Shot (Movement appropriate to the style, e.g., walking, jumping, or flowing fabric)
-    4. Seated / Relaxed Pose (Interacting with the environment/props)
-    5. Back View / Angle (Highlighting rear details or a mysterious angle)
-    6. Emotive Portrait (Focus on character and expression)
-    
-    Constraint:
-    - If the style is 'Streetwear', suggests dynamic, cool, candid poses.
-    - If the style is 'Formal/Studio', suggest elegant, poised, static poses.
-    - Return ONLY a JSON array of 6 strings.
-    - Do not include numbering or labels like "Pose 1:" in the strings.
-  `;
-
-  // Wrap in retry logic
   try {
+    const ai = getClient(apiKey, baseUrl);
+    
+    const prompt = `
+      Act as a high-end fashion photoshoot director.
+      First, analyze the provided "Master Prompt" to extract the SUBJECT, OUTFIT, SETTING, and STYLE.
+      
+      Master Prompt: "${masterPrompt}"
+      
+      Task: Generate 6 distinct, commercially viable pose descriptions tailored specifically to the extracted 'STYLE' and 'OUTFIT'.
+      
+      The 6 poses must cover these exact shot types in order:
+      1. Full Body Look (Showcasing the complete silhouette and outfit)
+      2. Close-up (Focusing on fabric details, accessories, or makeup)
+      3. Action / Dynamic Shot (Movement appropriate to the style, e.g., walking, jumping, or flowing fabric)
+      4. Seated / Relaxed Pose (Interacting with the environment/props)
+      5. Back View / Angle (Highlighting rear details or a mysterious angle)
+      6. Emotive Portrait (Focus on character and expression)
+      
+      Constraint:
+      - If the style is 'Streetwear', suggests dynamic, cool, candid poses.
+      - If the style is 'Formal/Studio', suggest elegant, poised, static poses.
+      - Return ONLY a JSON array of 6 strings.
+      - Do not include numbering or labels like "Pose 1:" in the strings.
+    `;
+
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -91,14 +121,16 @@ export const suggestPoses = async (apiKey: string | undefined, masterPrompt: str
       });
 
       const text = response.text;
-      if (!text) throw new Error("No text returned");
+      if (!text) throw new Error("No text returned from AI");
       
       const parsed = JSON.parse(text);
       return Array.isArray(parsed) && parsed.length >= 6 ? parsed.slice(0, 6) : getFallbackPoses();
     });
+
   } catch (error) {
-    console.error("Error suggesting poses (max retries reached):", error);
-    return getFallbackPoses();
+    console.error("Error suggesting poses:", error);
+    // Throw formatted error to be handled by UI
+    throw new Error(formatGeminiError(error));
   }
 };
 
@@ -128,38 +160,37 @@ export const generateCampaignImage = async (
   masterPrompt: string,
   poseDescription: string,
   baseUrl?: string
-): Promise<string | null> => {
-  const ai = getClient(apiKey, baseUrl);
-
-  // 1. Prepare Images
-  const heroImg = parseBase64(heroImageBase64);
-  const itemImg = parseBase64(sellingItemBase64);
-
-  // 2. Construct Strict Consistency Prompt
-  const finalPrompt = `
-    ${masterPrompt}
-    
-    CRITICAL INSTRUCTION:
-    Generate a photorealistic high-end fashion image.
-    
-    VISUAL REFERENCES:
-    1. HERO SHOT (First Image provided): Strictly copy the Model's Face, Body Type, Skin Tone, and Hair style from this image.
-    2. SELLING ITEM REFERENCE (Second Image provided): Strictly copy the Garment/Product details from this image.
-    
-    CONSISTENCY RULES:
-    - The SUBJECT/FACE must be identical to the Hero Shot.
-    - The GARMENT/PRODUCT must be identical to the Selling Item Reference.
-    - DO NOT alter the logos, colors, patterns, or fabric texture of the Selling Item.
-    - Ensure the clothing fits naturally on the model's body in the specified pose.
-    
-    POSE DIRECTIVE:
-    ${poseDescription}
-    
-    Style: High resolution, editorial fashion photography.
-  `;
-
-  // Wrap in retry logic
+): Promise<string> => {
   try {
+    const ai = getClient(apiKey, baseUrl);
+
+    // 1. Prepare Images
+    const heroImg = parseBase64(heroImageBase64);
+    const itemImg = parseBase64(sellingItemBase64);
+
+    // 2. Construct Strict Consistency Prompt
+    const finalPrompt = `
+      ${masterPrompt}
+      
+      CRITICAL INSTRUCTION:
+      Generate a photorealistic high-end fashion image.
+      
+      VISUAL REFERENCES:
+      1. HERO SHOT (First Image provided): Strictly copy the Model's Face, Body Type, Skin Tone, and Hair style from this image.
+      2. SELLING ITEM REFERENCE (Second Image provided): Strictly copy the Garment/Product details from this image.
+      
+      CONSISTENCY RULES:
+      - The SUBJECT/FACE must be identical to the Hero Shot.
+      - The GARMENT/PRODUCT must be identical to the Selling Item Reference.
+      - DO NOT alter the logos, colors, patterns, or fabric texture of the Selling Item.
+      - Ensure the clothing fits naturally on the model's body in the specified pose.
+      
+      POSE DIRECTIVE:
+      ${poseDescription}
+      
+      Style: High resolution, editorial fashion photography.
+    `;
+
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-image",
@@ -200,10 +231,11 @@ export const generateCampaignImage = async (
           }
         }
       }
-      return null;
+      throw new Error("No image data generated in response.");
     });
   } catch (error) {
-    console.error("Error generating image (max retries reached):", error);
-    return null;
+    console.error("Error generating image:", error);
+    // Throw formatted error
+    throw new Error(formatGeminiError(error));
   }
 };
